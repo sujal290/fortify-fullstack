@@ -4,6 +4,7 @@ import { useMutation } from '@tanstack/react-query';
 import { loginUser, registerUser } from '@/services/authService';
 import { setCredentials, logout as logoutAction } from '@/redux/slices/authSlice';
 import { useToast } from './useToast';
+import { useRouter } from 'next/navigation';
 
 /**
  * Wraps auth state (Redux) + auth API calls (React Query mutations) behind
@@ -13,29 +14,37 @@ export function useAuth() {
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const { user, token } = useSelector((s) => s.auth);
+  const router = useRouter();
 
   const login = useMutation({
-    mutationFn: loginUser,
-    onSuccess: (data) => {
-      dispatch(setCredentials(data));
-      showToast(`Welcome back, ${data.name.split(' ')[0]}`);
-    },
-    onError: (err) => showToast(err?.response?.data?.message || 'Login failed', 'error'),
-  });
+  mutationFn: loginUser,
+  onSuccess: (data) => {
+    dispatch(setCredentials(data));
+    showToast(`Welcome back, ${data.name.split(' ')[0]}`);
+    router.replace('/');
+  },
+  onError: (err) =>
+    showToast(err?.response?.data?.message || 'Login failed', 'error'),
+});
 
-  const signup = useMutation({
-    mutationFn: registerUser,
-    onSuccess: (data) => {
-      dispatch(setCredentials(data));
-      showToast(`Account created — welcome, ${data.name.split(' ')[0]}`);
-    },
-    onError: (err) => showToast(err?.response?.data?.message || 'Signup failed', 'error'),
-  });
+const signup = useMutation({
+  mutationFn: registerUser,
+  onSuccess: (data) => {
+    dispatch(setCredentials(data));
+    showToast(`Account created — welcome, ${data.name.split(' ')[0]}`);
+    router.replace('/');
+  },
+  onError: (err) =>
+    showToast(err?.response?.data?.message || 'Signup failed', 'error'),
+});
+
+  
 
   const logout = () => {
     dispatch(logoutAction());
     showToast('Signed out');
   };
+  
 
   return {
     user,
