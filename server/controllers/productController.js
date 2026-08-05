@@ -1,21 +1,35 @@
+// PATH: server/controllers/productController.js  (REPLACES existing file)
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 
 const slugify = (str) =>
   str.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
 
-// GET /api/products?category=&search=&page=&limit=
+// GET /api/products?category=&search=&sort=&minPrice=&maxPrice=&page=&limit=
 const getProducts = asyncHandler(async (req, res) => {
-  const { category, search, page = 1, limit = 12 } = req.query;
+  const { category, search, sort, minPrice, maxPrice, page = 1, limit = 12 } = req.query;
 
   const filter = {};
   if (category && category !== 'All') filter.category = category;
   if (search) filter.$text = { $search: search };
+  if (minPrice || maxPrice) {
+    filter.price = {};
+    if (minPrice) filter.price.$gte = Number(minPrice);
+    if (maxPrice) filter.price.$lte = Number(maxPrice);
+  }
+
+  const SORTS = {
+    price_asc: 'price',
+    price_desc: '-price',
+    rating: '-ratingAvg',
+    newest: '-createdAt',
+  };
+  const sortBy = SORTS[sort] || '-createdAt';
 
   const products = await Product.find(filter)
     .skip((page - 1) * limit)
     .limit(Number(limit))
-    .sort('-createdAt');
+    .sort(sortBy);
 
   const total = await Product.countDocuments(filter);
 

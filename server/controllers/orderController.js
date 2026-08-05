@@ -1,3 +1,4 @@
+// PATH: server/controllers/orderController.js  (REPLACES existing file)
 const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
@@ -48,6 +49,8 @@ const placeOrder = asyncHandler(async (req, res) => {
     itemsPrice,
     shippingPrice,
     totalPrice: itemsPrice + shippingPrice - discount,
+    estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // +5 days, adjust once real courier ETAs are wired in
+    trackingHistory: [{ status: 'Pending', at: new Date() }],
   });
 
   cart.items = [];
@@ -72,6 +75,20 @@ const getAllOrders = asyncHandler(async (req, res) => {
   res.json(orders);
 });
 
+// GET /api/orders/:id   (owner or admin — used by the order tracking page)
+const getOrderById = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+  if (!order) {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+  if (order.user.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+    res.status(403);
+    throw new Error('Not authorized to view this order');
+  }
+  res.json(order);
+});
+
 // PUT /api/orders/:id/status   (admin)   { status }
 const updateOrderStatus = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
@@ -80,6 +97,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     throw new Error('Order not found');
   }
   order.status = req.body.status;
+  order.trackingHistory.push({ status: req.body.status, at: new Date() });
   await order.save();
 
   const user = await User.findById(order.user);
@@ -92,4 +110,4 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   res.json(order);
 });
 
-module.exports = { placeOrder, getMyOrders, getAllOrders, updateOrderStatus };
+module.exports = { placeOrder, getMyOrders, getAllOrders, getOrderById, updateOrderStatus };

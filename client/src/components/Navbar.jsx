@@ -1,7 +1,8 @@
+// PATH: client/src/components/Navbar.jsx  (REPLACES existing file)
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { NAV_LINKS } from '@/constants/navLinks';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
@@ -9,9 +10,19 @@ import MobileMenu from './MobileMenu';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, isAdmin, user, logout } = useAuth();
   const { count } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [query, setQuery] = useState('');
+
+  const submitSearch = (e) => {
+    e.preventDefault();
+    if (!query.trim()) return;
+    router.push(`/shop?search=${encodeURIComponent(query.trim())}`);
+    setSearchOpen(false);
+  };
 
   return (
     <header className="bg-navy sticky top-0 z-50 border-b border-gold/25">
@@ -38,6 +49,20 @@ export default function Navbar() {
         </div>
 
         <div className="flex items-center gap-5">
+          {searchOpen ? (
+            <form onSubmit={submitSearch} className="hidden sm:flex items-center">
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onBlur={() => !query && setSearchOpen(false)}
+                placeholder="Search Fortify…"
+                className="bg-transparent border-b border-gold text-cream text-[13px] placeholder:text-cream/40 outline-none w-48 py-1"
+              />
+            </form>
+          ) : (
+            <button onClick={() => setSearchOpen(true)} className="hidden sm:inline text-cream text-[13px]" aria-label="Search">🔍</button>
+          )}
           {isAuthenticated ? (
             <>
               <Link href="/wishlist" className="text-cream text-[13px]" aria-label="Wishlist">♡</Link>

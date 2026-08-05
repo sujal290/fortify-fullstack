@@ -1,3 +1,4 @@
+// PATH: server/models/Order.js  (REPLACES existing file)
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema(
@@ -33,9 +34,17 @@ const orderSchema = new mongoose.Schema(
     paidAt: Date,
     status: {
       type: String,
-      enum: ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'],
+      enum: ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'],
       default: 'Pending',
     },
+    estimatedDelivery: Date,
+    // Logs every status change with a timestamp — powers the order tracking timeline.
+    trackingHistory: [
+      {
+        status: String,
+        at: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true }
 );

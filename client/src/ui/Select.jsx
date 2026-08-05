@@ -1,3 +1,4 @@
+// PATH: client/src/ui/Select.jsx  (REPLACES existing file)
 'use client';
 import { forwardRef } from 'react';
 
@@ -16,9 +17,11 @@ const Select = forwardRef(function Select({ label, id, options = [], className =
         className={['w-full px-3.5 py-2.5 text-[13.5px] font-body bg-[#fbfbfa] border border-[#ddd] outline-none focus:border-gold', className].join(' ')}
         {...props}
       >
-        {options.map((opt) => (
-          <option key={opt} value={opt}>{opt}</option>
-        ))}
+        {options.map((opt) => {
+          const value = typeof opt === 'object' ? opt.value : opt;
+          const text = typeof opt === 'object' ? opt.label : opt;
+          return <option key={value} value={value}>{text}</option>;
+        })}
       </select>
     </div>
   );

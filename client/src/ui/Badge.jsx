@@ -1,7 +1,9 @@
+// PATH: client/src/ui/Badge.jsx  (REPLACES existing file)
 const STATUS_STYLES = {
   Pending: 'bg-[#fdf1e0] text-[#a5680c]',
   Confirmed: 'bg-[#e5f0ea] text-[#1f6b40]',
   Shipped: 'bg-[#e6eefc] text-[#1f4c8b]',
+  'Out for Delivery': 'bg-[#eee6fb] text-[#5b2f9e]',
   Delivered: 'bg-[#e5f0ea] text-[#1f6b40]',
   Cancelled: 'bg-[#fbecec] text-[#7a1f1f]',
 };

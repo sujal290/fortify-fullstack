@@ -1,10 +1,11 @@
+// PATH: client/src/app/admin/orders/page.js  (REPLACES existing file)
 'use client';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import AdminLayout from '@/layouts/AdminLayout';
 import { fetchAllOrders, updateOrderStatus } from '@/services/orderService';
 
 const fmt = (n) => '₹' + n.toLocaleString('en-IN');
-const STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Delivered', 'Cancelled'];
+const STATUSES = ['Pending', 'Confirmed', 'Shipped', 'Out for Delivery', 'Delivered', 'Cancelled'];
 
 function OrdersContent() {
   const queryClient = useQueryClient();
