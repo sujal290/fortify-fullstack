@@ -2,6 +2,9 @@ const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
+const User = require('../models/User');
+const sendEmail = require('../utils/sendEmail');
+const { orderPlacedEmail, orderStatusEmail } = require('../services/emailTemplates');
 
 // POST /api/orders   { shippingAddress, paymentMethod, couponCode }
 const placeOrder = asyncHandler(async (req, res) => {
@@ -50,6 +53,10 @@ const placeOrder = asyncHandler(async (req, res) => {
   cart.items = [];
   await cart.save();
 
+  sendEmail({ to: req.user.email, subject: 'Your Fortify order is confirmed', html: orderPlacedEmail(order) }).catch((err) =>
+    console.error('Order confirmation email failed:', err.message)
+  );
+
   res.status(201).json(order);
 });
 
@@ -74,6 +81,14 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   }
   order.status = req.body.status;
   await order.save();
+
+  const user = await User.findById(order.user);
+  if (user) {
+    sendEmail({ to: user.email, subject: `Your Fortify order is ${order.status}`, html: orderStatusEmail(order) }).catch((err) =>
+      console.error('Order status email failed:', err.message)
+    );
+  }
+
   res.json(order);
 });
 

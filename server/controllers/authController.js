@@ -3,6 +3,7 @@ const crypto = require('crypto');
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
+const { welcomeEmail, passwordResetEmail } = require('../services/emailTemplates');
 
 // POST /api/auth/register
 const register = asyncHandler(async (req, res) => {
@@ -15,6 +16,10 @@ const register = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({ name, email, password, authProvider: 'local' });
+
+  sendEmail({ to: user.email, subject: 'Welcome to Fortify', html: welcomeEmail(user.name) }).catch((err) =>
+    console.error('Welcome email failed:', err.message)
+  );
 
   res.status(201).json({
     _id: user._id,
@@ -75,7 +80,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   await sendEmail({
     to: user.email,
     subject: 'Your Fortify password reset code',
-    html: `<p>Your password reset code is <b>${otp}</b>. It expires in 10 minutes.</p>`,
+    html: passwordResetEmail(otp),
   });
 
   res.json({ message: 'Reset code sent to your email' });

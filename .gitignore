@@ -7,3 +7,13 @@ build/
 uploads/*
 !uploads/.gitkeep
 .DS_Store
+
+
+server/.env
+client/.env.local
+
+
+.env
+.env.*
+client/.env.local
+server/.env

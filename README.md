@@ -22,6 +22,8 @@ web app and the API server.
 
 These are wired into `client/tailwind.config.js` — use `bg-navy`, `text-gold`, `font-display`, `font-body` etc. rather than hardcoding hex values.
 
+**Deploying?** See [`DEPLOYMENT.md`](./DEPLOYMENT.md) for the full walkthrough — getting real MongoDB Atlas / Google OAuth / Cloudinary / Razorpay / Gmail credentials, then shipping to Vercel + Render.
+
 ## Getting started
 
 ### 1. Server
@@ -69,6 +71,16 @@ fortify/
     ├── utils/             token generation, response shaping
     └── app.js / server.js  Express app + entrypoint
 ```
+
+## Phase 3 status — payments, image uploads, email (done)
+
+**Payments (Razorpay)** — `POST /api/payments/create-order` creates a Razorpay order for an existing unpaid Fortify order; `POST /api/payments/verify` re-derives the HMAC signature server-side from `RAZORPAY_KEY_SECRET` and only then marks the order paid — the client's word alone is never trusted. On the client, `useRazorpay()` loads `checkout.js`, opens the hosted widget, and resolves once verification succeeds. Selecting **RAZORPAY** at checkout triggers this; other methods (COD/UPI/CARD) just record the order as before.
+
+**Image uploads (Cloudinary)** — `POST /api/upload` (admin-only, multipart) streams a file straight from memory to Cloudinary via `multer.memoryStorage()` — nothing touches local disk. The admin **Add/Edit Product** modal now has a real image uploader with previews and per-image remove; uploaded images show up on `ProductCard` and the product detail page, falling back to the category icon when a product has none.
+
+**Branded emails** — `services/emailTemplates.js` wraps every email (welcome, password reset, order confirmed, order status change) in one navy/gold HTML shell matching the storefront. Wired into `register()`, `forgotPassword()`, `placeOrder()`, and `updateOrderStatus()`. Emails are fire-and-forget (failures are logged, never block the API response).
+
+Verified: server boots cleanly end-to-end (`node -e "require('./app.js')"` with dummy env vars — no live DB needed to catch require-time errors), and the client still builds with zero errors across all 20 routes. Also caught and fixed two real supply-chain issues along the way: bumped `next` 15.0.0 → 15.5.22 and `multer` 1.x → 2.x after npm flagged known CVEs in the original pins.
 
 ## Phase 2 status — extras (done)
 

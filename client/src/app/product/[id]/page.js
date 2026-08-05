@@ -43,8 +43,12 @@ export default function ProductDetailPage() {
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-7 py-14 grid md:grid-cols-2 gap-16">
-        <div className="h-[460px] bg-gradient-to-br from-[#f0ece4] to-cream border border-[#eee] flex items-center justify-center text-[110px]">
-          {iconFor(product.category)}
+        <div className="h-[460px] bg-gradient-to-br from-[#f0ece4] to-cream border border-[#eee] flex items-center justify-center text-[110px] overflow-hidden">
+          {product.images?.[0]?.url ? (
+            <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+          ) : (
+            iconFor(product.category)
+          )}
         </div>
         <div>
           <div className="text-[11px] tracking-[0.1em] uppercase text-gold mb-2.5">{product.category}</div>

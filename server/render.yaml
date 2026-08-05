@@ -1,0 +1,50 @@
+# Render Blueprint — https://render.com/docs/blueprint-spec
+# In the Render dashboard: New > Blueprint > point at this repo, root dir "server".
+# Every env var below except the plain values must be filled in manually in
+# the Render dashboard after the first deploy (Render won't invent secrets for you).
+services:
+  - type: web
+    name: fortify-api
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: CLIENT_URL
+        sync: false
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        sync: false
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: EMAIL_FROM
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false

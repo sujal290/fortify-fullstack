@@ -8,6 +8,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { googleLoginUrl } from '@/services/authService';
 
 export default function LoginPage() {
+  console.log("API =", process.env.NEXT_PUBLIC_API_URL);
+  console.log("Google URL =", googleLoginUrl());
   const { register, handleSubmit, formState: { errors } } = useForm();
   const { login, loginPending } = useAuth();
 

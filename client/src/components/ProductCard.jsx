@@ -30,8 +30,12 @@ export default function ProductCard({ product }) {
         <WishlistButton productId={product._id} />
       </div>
       <Link href={`/product/${product._id}`}>
-        <div className="h-[200px] flex items-center justify-center text-5xl bg-gradient-to-br from-[#eee7db] to-cream rounded-t-[70px]">
-          {iconFor(product.category)}
+        <div className="h-[200px] flex items-center justify-center text-5xl bg-gradient-to-br from-[#eee7db] to-cream rounded-t-[70px] overflow-hidden">
+          {product.images?.[0]?.url ? (
+            <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+          ) : (
+            iconFor(product.category)
+          )}
         </div>
         <div className="p-4 pb-5">
           <div className="text-[10px] tracking-[0.1em] uppercase text-gold mb-1.5">{product.category}</div>

@@ -8,7 +8,9 @@ import CouponBox from '@/components/CouponBox';
 import Input from '@/ui/Input';
 import Select from '@/ui/Select';
 import Button from '@/ui/Button';
+import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
+import { useRazorpay } from '@/hooks/useRazorpay';
 import { placeOrder } from '@/services/orderService';
 import { useToast } from '@/hooks/useToast';
 import { useDispatch } from 'react-redux';
@@ -18,11 +20,14 @@ const fmt = (n) => '₹' + n.toLocaleString('en-IN');
 
 function CheckoutForm() {
   const { items, total } = useCart();
+  const { user } = useAuth();
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
   const { showToast } = useToast();
+  const { payForOrder } = useRazorpay();
   const dispatch = useDispatch();
   const router = useRouter();
   const [coupon, setCoupon] = useState(null); // { code, discount }
+  const [paying, setPaying] = useState(false);
   const shipping = total > 4000 ? 0 : 199;
   const grandTotal = Math.max(0, total + shipping - (coupon?.discount || 0));
 
@@ -33,6 +38,22 @@ function CheckoutForm() {
         paymentMethod: data.payment,
         couponCode: coupon?.code,
       });
+
+      if (data.payment === 'RAZORPAY') {
+        setPaying(true);
+        try {
+          await payForOrder(order, user);
+          showToast('Payment successful');
+        } catch (err) {
+          // Order already exists (Pending/unpaid) — customer can retry payment from My Orders.
+          showToast(err.message || 'Payment was not completed', 'error');
+          dispatch(clearCart());
+          return router.push(`/order-success?id=${order._id}`);
+        } finally {
+          setPaying(false);
+        }
+      }
+
       dispatch(clearCart());
       router.push(`/order-success?id=${order._id}`);
     } catch (err) {
@@ -57,10 +78,10 @@ function CheckoutForm() {
         </div>
         <div className="bg-white border border-[#eee] p-6">
           <h3 className="font-display text-xl mb-4">Payment</h3>
-          <Select label="Payment Method" options={['COD', 'UPI', 'CARD']} {...register('payment')} />
-          <p className="text-[11.5px] text-muted">Prototype checkout — no real payment is processed yet (wire up Razorpay in orderController).</p>
+          <Select label="Payment Method" options={['RAZORPAY', 'COD', 'UPI', 'CARD']} {...register('payment')} />
+          <p className="text-[11.5px] text-muted">RAZORPAY opens a real Razorpay checkout (test mode with test keys). Other methods just record the order.</p>
         </div>
-        <Button type="submit" variant="primary" fullWidth loading={isSubmitting} className="mt-5 md:hidden">Place Order</Button>
+        <Button type="submit" variant="primary" fullWidth loading={isSubmitting || paying} className="mt-5 md:hidden">Place Order</Button>
       </form>
       <div className="bg-white border border-[#eee] p-6">
         <h3 className="font-display text-xl mb-4">Order Summary</h3>
@@ -77,7 +98,7 @@ function CheckoutForm() {
 
         <CouponBox subtotal={total} applied={coupon} onApply={setCoupon} onRemove={() => setCoupon(null)} />
 
-        <Button variant="primary" fullWidth className="mt-4 hidden md:flex" onClick={handleSubmit(onSubmit)}>Place Order</Button>
+        <Button variant="primary" fullWidth className="mt-4 hidden md:flex" loading={isSubmitting || paying} onClick={handleSubmit(onSubmit)}>Place Order</Button>
       </div>
     </div>
   );

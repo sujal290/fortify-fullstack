@@ -14,6 +14,8 @@ const orderRoutes = require('./routes/orderRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
 const couponRoutes = require('./routes/couponRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 const app = express();
 
@@ -36,6 +38,8 @@ app.use('/api/cart', cartRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/coupons', couponRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/upload', uploadRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
