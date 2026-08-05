@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/layouts/MainLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Breadcrumb from '@/components/Breadcrumb';
-import OrderTracker from '@/components/OrderTracker';
+import OrderTracker from '@/components/Ordertracker';
 import Badge from '@/ui/Badge';
 import Spinner from '@/ui/Spinner';
 import { fetchOrderById } from '@/services/orderService';
