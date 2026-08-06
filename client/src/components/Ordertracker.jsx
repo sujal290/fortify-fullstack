@@ -1,75 +1,73 @@
-// PATH: client/src/components/OrderTracker.jsx
+// PATH: client/src/app/orders/[id]/page.js  (REPLACES existing file — fixes import casing bug)
 'use client';
+import { useParams } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import MainLayout from '@/layouts/MainLayout';
+import ProtectedRoute from '@/components/ProtectedRoute';
+import Breadcrumb from '@/components/Breadcrumb';
+import OrderTracker from '@/components/OrderTracker';
+import Badge from '@/ui/Badge';
+import Spinner from '@/ui/Spinner';
+import { fetchOrderById } from '@/services/orderService';
 
-const STEPS = [
-  { key: 'Pending', label: 'Order Placed', icon: '🧾' },
-  { key: 'Confirmed', label: 'Confirmed', icon: '✅' },
-  { key: 'Shipped', label: 'Shipped', icon: '📦' },
-  { key: 'Out for Delivery', label: 'Out for Delivery', icon: '🚚' },
-  { key: 'Delivered', label: 'Delivered', icon: '🏠' },
-];
+const fmt = (n) => '₹' + n.toLocaleString('en-IN');
 
-/**
- * Visual order-tracking timeline. Not a live GPS map — there's no courier
- * API wired in yet, so this reflects the order's status history instead of
- * a real vehicle position. Swap in a real map (Google Maps / a courier
- * partner's tracking widget) once that integration exists; the data shape
- * (order.trackingHistory) is already there to support it.
- */
-export default function OrderTracker({ order }) {
-  if (order.status === 'Cancelled') {
-    return (
-      <div className="bg-[#fbecec] border border-[#f3caca] text-[#7a1f1f] px-5 py-4 text-sm">
-        This order was cancelled.
-      </div>
-    );
-  }
+function OrderDetail() {
+  const { id } = useParams();
+  const { data: order, isLoading } = useQuery({
+    queryKey: ['order', id],
+    queryFn: () => fetchOrderById(id),
+  });
 
-  const currentIndex = STEPS.findIndex((s) => s.key === order.status);
-  const historyFor = (key) => order.trackingHistory?.find((h) => h.status === key);
+  if (isLoading) return <div className="flex justify-center py-24"><Spinner size={28} /></div>;
+  if (!order) return <p className="text-center py-24 text-muted">Order not found.</p>;
 
   return (
-    <div className="bg-white border border-[#eee] p-7">
-      {order.estimatedDelivery && (
-        <p className="text-[13px] text-muted mb-6">
-          Estimated delivery: <b className="text-ink">{new Date(order.estimatedDelivery).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}</b>
-        </p>
-      )}
+    <div className="max-w-3xl mx-auto px-7 py-11">
+      <div className="flex items-center justify-between mb-7">
+        <h2 className="font-display text-2xl">Order #{order._id.slice(-6).toUpperCase()}</h2>
+        <Badge tone={order.status}>{order.status}</Badge>
+      </div>
 
-      <div className="relative flex justify-between">
-        {/* Route line — dashed, gold once passed, gray ahead */}
-        <div className="absolute top-5 left-0 right-0 h-[2px] bg-[#e5e5e5] z-0">
-          <div
-            className="h-full bg-gold transition-all duration-500"
-            style={{ width: `${(Math.max(currentIndex, 0) / (STEPS.length - 1)) * 100}%` }}
-          />
-        </div>
+      <div className="mb-8">
+        <OrderTracker order={order} />
+      </div>
 
-        {STEPS.map((step, i) => {
-          const done = i <= currentIndex;
-          const entry = historyFor(step.key);
-          return (
-            <div key={step.key} className="relative z-10 flex flex-col items-center text-center" style={{ width: `${100 / STEPS.length}%` }}>
-              <div
-                className={[
-                  'w-10 h-10 rounded-full flex items-center justify-center text-base border-2 mb-2.5 bg-white',
-                  done ? 'border-gold text-gold' : 'border-[#ddd] text-[#bbb]',
-                ].join(' ')}
-              >
-                {step.icon}
-              </div>
-              <span className={`text-[11px] uppercase tracking-[0.04em] ${done ? 'text-navy font-semibold' : 'text-muted'}`}>
-                {step.label}
-              </span>
-              {entry && (
-                <span className="text-[10px] text-muted mt-1">
-                  {new Date(entry.at).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
-                </span>
-              )}
+      <div className="grid md:grid-cols-2 gap-5">
+        <div className="bg-white border border-[#eee] p-6">
+          <h3 className="font-display text-lg mb-3">Items</h3>
+          {order.items.map((i) => (
+            <div key={i.product} className="flex justify-between text-[13px] text-muted py-1.5">
+              <span>{i.name} × {i.qty}</span><span>{fmt(i.price * i.qty)}</span>
             </div>
-          );
-        })}
+          ))}
+          <div className="flex justify-between font-bold border-t border-[#eee] mt-2 pt-3"><span>Total</span><span>{fmt(order.totalPrice)}</span></div>
+        </div>
+        <div className="bg-white border border-[#eee] p-6">
+          <h3 className="font-display text-lg mb-3">Delivery Address</h3>
+          <p className="text-[13px] text-muted leading-relaxed">
+            {order.shippingAddress?.fullName}<br />
+            {order.shippingAddress?.line1}<br />
+            {order.shippingAddress?.city}, {order.shippingAddress?.pin}<br />
+            {order.shippingAddress?.phone}
+          </p>
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function OrderTrackingPage() {
+  return (
+    <MainLayout>
+      <div className="bg-white border-b border-[#eee] py-8">
+        <div className="max-w-3xl mx-auto px-7">
+          <Breadcrumb items={[{ label: 'Home', href: '/' }, { label: 'My Orders', href: '/orders' }, { label: 'Track Order' }]} />
+        </div>
+      </div>
+      <ProtectedRoute>
+        <OrderDetail />
+      </ProtectedRoute>
+    </MainLayout>
   );
 }
