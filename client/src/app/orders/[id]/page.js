@@ -1,4 +1,4 @@
-// PATH: client/src/app/orders/[id]/page.js  (REPLACES existing file — fixes import casing bug)
+// PATH: client/src/app/orders/[id]/page.js  
 'use client';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
