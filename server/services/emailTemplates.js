@@ -81,3 +81,27 @@ exports.orderStatusEmail = (order) =>
     </p>
     ${button('View Order', process.env.CLIENT_URL + '/orders')}`
   );
+
+exports.abandonedCartEmail = (name, items) =>
+  shell(
+    `Still thinking it over, ${name.split(' ')[0]}?`,
+    `<p style="color:#444;font-size:14px;line-height:1.7;">
+      You left a few things in your Fortify cart. They're still here whenever you're ready.
+    </p>
+    <table role="presentation" width="100%" style="margin:16px 0;border-top:1px solid #eee;">
+      ${items.map((i) => row(`${i.name} × ${i.qty}`, `₹${(i.price * i.qty).toLocaleString('en-IN')}`)).join('')}
+    </table>
+    ${button('Return to Your Cart', process.env.CLIENT_URL + '/cart')}`
+  );
+
+exports.lowStockAlertEmail = (products) =>
+  shell(
+    'Low stock alert',
+    `<p style="color:#444;font-size:14px;line-height:1.7;">
+      The following products are running low and may need restocking:
+    </p>
+    <table role="presentation" width="100%" style="margin:16px 0;border-top:1px solid #eee;">
+      ${products.map((p) => row(p.name, `${p.stock} left`)).join('')}
+    </table>
+    ${button('Manage Inventory', process.env.CLIENT_URL + '/admin/products')}`
+  );

@@ -9,6 +9,8 @@ const cartSchema = new mongoose.Schema(
         qty: { type: Number, required: true, default: 1 },
       },
     ],
+    // Set when an abandoned-cart reminder is sent, so the cron job doesn't email the same cart daily.
+    lastReminderSentAt: { type: Date },
   },
   { timestamps: true }
 );

@@ -4,6 +4,7 @@ const Order = require('../models/Order');
 const Cart = require('../models/Cart');
 const Coupon = require('../models/Coupon');
 const User = require('../models/User');
+const Product = require('../models/Product');
 const sendEmail = require('../utils/sendEmail');
 const { orderPlacedEmail, orderStatusEmail } = require('../services/emailTemplates');
 
@@ -13,6 +14,16 @@ const placeOrder = asyncHandler(async (req, res) => {
   if (!cart || cart.items.length === 0) {
     res.status(400);
     throw new Error('Cart is empty');
+  }
+
+  // Re-check stock against the live product record right before committing the
+  // order — the cart may have been sitting open for a while, and someone else
+  // could have bought the last units in the meantime.
+  for (const i of cart.items) {
+    if (!i.product || i.product.stock < i.qty) {
+      res.status(400);
+      throw new Error(`Sorry, "${i.product?.name || 'an item'}" no longer has enough stock (only ${i.product?.stock ?? 0} left). Please update your cart.`);
+    }
   }
 
   const items = cart.items.map((i) => ({
@@ -52,6 +63,11 @@ const placeOrder = asyncHandler(async (req, res) => {
     estimatedDelivery: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000), // +5 days, adjust once real courier ETAs are wired in
     trackingHistory: [{ status: 'Pending', at: new Date() }],
   });
+
+  // Decrement stock now that the order is confirmed to exist.
+  for (const i of cart.items) {
+    await Product.findByIdAndUpdate(i.product._id, { $inc: { stock: -i.qty } });
+  }
 
   cart.items = [];
   await cart.save();
@@ -96,9 +112,18 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     res.status(404);
     throw new Error('Order not found');
   }
+
+  const wasAlreadyCancelled = order.status === 'Cancelled';
   order.status = req.body.status;
   order.trackingHistory.push({ status: req.body.status, at: new Date() });
   await order.save();
+
+  // Cancelling an order releases the stock it was holding back to inventory.
+  if (req.body.status === 'Cancelled' && !wasAlreadyCancelled) {
+    for (const i of order.items) {
+      await Product.findByIdAndUpdate(i.product, { $inc: { stock: i.qty } });
+    }
+  }
 
   const user = await User.findById(order.user);
   if (user) {

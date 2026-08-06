@@ -1,9 +1,11 @@
 require('dotenv').config();
 const app = require('./app');
 const connectDB = require('./config/db');
+const { startCronJobs } = require('./services/cronJobs');
 
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
   app.listen(PORT, () => console.log(`Fortify API running on port ${PORT}`));
+  startCronJobs();
 });
