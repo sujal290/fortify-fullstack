@@ -13,9 +13,12 @@ const fmt = (n) => '₹' + n.toLocaleString('en-IN');
 export default function ProductCard({ product }) {
   const { addItem } = useCart();
   const [adding, setAdding] = useState(false);
+  const outOfStock = product.stock <= 0;
+  const lowStock = product.stock > 0 && product.stock <= 5;
 
   const handleAdd = async (e) => {
     e.preventDefault();
+    if (outOfStock) return;
     setAdding(true);
     try {
       await addItem(product._id);
@@ -29,10 +32,13 @@ export default function ProductCard({ product }) {
       <div className="absolute top-3 right-3 z-10">
         <WishlistButton productId={product._id} />
       </div>
+      {outOfStock && (
+        <div className="absolute top-3 left-3 z-10 bg-navy text-cream text-[10px] uppercase tracking-[0.05em] px-2.5 py-1">Out of Stock</div>
+      )}
       <Link href={`/product/${product._id}`}>
         <div className="h-[200px] flex items-center justify-center text-5xl bg-gradient-to-br from-[#eee7db] to-cream rounded-t-[70px] overflow-hidden">
           {product.images?.[0]?.url ? (
-            <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
+            <img src={product.images[0].url} alt={product.name} className={`w-full h-full object-cover ${outOfStock ? 'opacity-50' : ''}`} />
           ) : (
             iconFor(product.category)
           )}
@@ -46,11 +52,12 @@ export default function ProductCard({ product }) {
               <span className="text-xs text-muted line-through ml-2 font-normal">{fmt(product.mrp)}</span>
             )}
           </div>
+          {lowStock && <div className="text-[11px] text-[#a5680c] mt-1">Only {product.stock} left</div>}
         </div>
       </Link>
       <div className="px-4 pb-4">
-        <Button variant="dark" size="sm" fullWidth loading={adding} onClick={handleAdd}>
-          Add to Cart
+        <Button variant="dark" size="sm" fullWidth loading={adding} disabled={outOfStock} onClick={handleAdd}>
+          {outOfStock ? 'Out of Stock' : 'Add to Cart'}
         </Button>
       </div>
     </Card>

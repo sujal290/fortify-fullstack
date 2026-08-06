@@ -1,3 +1,4 @@
+// PATH: client/src/app/product/[id]/page.js  (REPLACES existing file)
 'use client';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -6,6 +7,7 @@ import MainLayout from '@/layouts/MainLayout';
 import Breadcrumb from '@/components/Breadcrumb';
 import WishlistButton from '@/components/WishlistButton';
 import ReviewSection from '@/components/ReviewSection';
+import ProductGallery from '@/components/ProductGallery';
 import Button from '@/ui/Button';
 import { CATEGORIES } from '@/constants/categories';
 import { fetchProductById } from '@/services/productService';
@@ -30,7 +32,11 @@ export default function ProductDetailPage() {
     return <MainLayout><div className="py-24 text-center text-muted">Loading…</div></MainLayout>;
   }
 
+  const outOfStock = product.stock <= 0;
+  const lowStock = product.stock > 0 && product.stock <= 5;
+
   const handleAdd = async () => {
+    if (outOfStock) return;
     setAdding(true);
     try { await addItem(product._id); } finally { setAdding(false); }
   };
@@ -43,13 +49,7 @@ export default function ProductDetailPage() {
         </div>
       </div>
       <div className="max-w-6xl mx-auto px-7 py-14 grid md:grid-cols-2 gap-16">
-        <div className="h-[460px] bg-gradient-to-br from-[#f0ece4] to-cream border border-[#eee] flex items-center justify-center text-[110px] overflow-hidden">
-          {product.images?.[0]?.url ? (
-            <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover" />
-          ) : (
-            iconFor(product.category)
-          )}
-        </div>
+        <ProductGallery images={product.images} fallbackIcon={iconFor(product.category)} />
         <div>
           <div className="text-[11px] tracking-[0.1em] uppercase text-gold mb-2.5">{product.category}</div>
           <h1 className="font-display text-4xl mb-3">{product.name}</h1>
@@ -59,13 +59,16 @@ export default function ProductDetailPage() {
           </div>
           <p className="text-muted text-sm leading-relaxed mb-6">{product.description}</p>
           <div className="flex gap-6 py-5 border-y border-[#eee] mb-6">
-            <div className="text-[11.5px] text-muted"><b className="block text-ink text-[12.5px] mb-0.5">Availability</b>{product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}</div>
+            <div className="text-[11.5px] text-muted">
+              <b className="block text-ink text-[12.5px] mb-0.5">Availability</b>
+              {outOfStock ? <span className="text-red-700 font-semibold">Out of stock</span> : lowStock ? <span className="text-[#a5680c] font-semibold">Only {product.stock} left</span> : `${product.stock} in stock`}
+            </div>
             <div className="text-[11.5px] text-muted"><b className="block text-ink text-[12.5px] mb-0.5">Delivery</b>3–5 business days</div>
             <div className="text-[11.5px] text-muted"><b className="block text-ink text-[12.5px] mb-0.5">Warranty</b>Lifetime hardware</div>
           </div>
           <div className="flex gap-3.5">
-            <Button variant="dark" loading={adding} onClick={handleAdd}>Add to Cart</Button>
-            <Button variant="primary" onClick={async () => { await handleAdd(); router.push('/cart'); }}>Buy Now</Button>
+            <Button variant="dark" loading={adding} disabled={outOfStock} onClick={handleAdd}>{outOfStock ? 'Out of Stock' : 'Add to Cart'}</Button>
+            <Button variant="primary" disabled={outOfStock} onClick={async () => { await handleAdd(); router.push('/cart'); }}>Buy Now</Button>
             <WishlistButton productId={product._id} className="!w-11 !h-11" />
           </div>
         </div>
