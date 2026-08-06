@@ -1,11 +1,11 @@
-// PATH: client/src/app/orders/[id]/page.js
+// PATH: client/src/app/orders/[id]/page.js  (REPLACES existing file — fixes import casing bug)
 'use client';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import MainLayout from '@/layouts/MainLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Breadcrumb from '@/components/Breadcrumb';
-import OrderTracker from '@/components/Ordertracker';
+import OrderTracker from '@/components/OrderTracker';
 import Badge from '@/ui/Badge';
 import Spinner from '@/ui/Spinner';
 import { fetchOrderById } from '@/services/orderService';
