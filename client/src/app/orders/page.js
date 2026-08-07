@@ -1,3 +1,4 @@
+// PATH: client/src/app/orders/page.js  (REPLACES existing file — adds Manage Addresses link)
 // PATH: client/src/app/orders/page.js  (REPLACES existing file)
 'use client';
 import Link from 'next/link';
@@ -51,7 +52,10 @@ export default function MyOrdersPage() {
   return (
     <MainLayout>
       <div className="bg-white border-b border-[#eee] py-8">
-        <div className="max-w-6xl mx-auto px-7"><h1 className="font-display text-3xl">My Orders</h1></div>
+        <div className="max-w-6xl mx-auto px-7 flex items-center justify-between">
+          <h1 className="font-display text-3xl">My Orders</h1>
+          <Link href="/addresses" className="text-[12px] uppercase tracking-[0.05em] text-navy hover:text-gold font-semibold">Manage Addresses</Link>
+        </div>
       </div>
       <div className="max-w-6xl mx-auto px-7 py-11">
         <ProtectedRoute>

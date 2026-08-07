@@ -1,17 +1,20 @@
+// PATH: client/src/app/checkout/page.js  (REPLACES existing file)
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import MainLayout from '@/layouts/MainLayout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import CouponBox from '@/components/CouponBox';
-import Input from '@/ui/Input';
+import AddressBook from '@/components/AddressBook';
 import Select from '@/ui/Select';
 import Button from '@/ui/Button';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useRazorpay } from '@/hooks/useRazorpay';
 import { placeOrder } from '@/services/orderService';
+import { fetchAddresses } from '@/services/userService';
 import { useToast } from '@/hooks/useToast';
 import { useDispatch } from 'react-redux';
 import { clearCart } from '@/redux/slices/cartSlice';
@@ -21,20 +24,43 @@ const fmt = (n) => '₹' + n.toLocaleString('en-IN');
 function CheckoutForm() {
   const { items, total } = useCart();
   const { user } = useAuth();
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm();
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const { showToast } = useToast();
   const { payForOrder } = useRazorpay();
   const dispatch = useDispatch();
   const router = useRouter();
   const [coupon, setCoupon] = useState(null); // { code, discount }
   const [paying, setPaying] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
   const shipping = total > 4000 ? 0 : 199;
   const grandTotal = Math.max(0, total + shipping - (coupon?.discount || 0));
 
+  const { data: addresses } = useQuery({ queryKey: ['addresses'], queryFn: fetchAddresses });
+
+  // Preselect the default address once it loads, if nothing's been chosen yet.
+  useEffect(() => {
+    if (!selectedAddressId && addresses?.length) {
+      setSelectedAddressId((addresses.find((a) => a.isDefault) || addresses[0])._id);
+    }
+  }, [addresses, selectedAddressId]);
+
   const onSubmit = async (data) => {
+    const address = addresses?.find((a) => a._id === selectedAddressId);
+    if (!address) {
+      showToast('Please select or add a delivery address', 'error');
+      return;
+    }
+
     try {
       const order = await placeOrder({
-        shippingAddress: { fullName: data.fullName, phone: data.phone, line1: data.address, city: data.city, pin: data.pin },
+        shippingAddress: {
+          fullName: address.fullName,
+          phone: address.phone,
+          line1: address.line1,
+          city: address.city,
+          state: address.state,
+          pin: address.pin,
+        },
         paymentMethod: data.payment,
         couponCode: coupon?.code,
       });
@@ -66,15 +92,7 @@ function CheckoutForm() {
       <form onSubmit={handleSubmit(onSubmit)}>
         <div className="bg-white border border-[#eee] p-6 mb-5">
           <h3 className="font-display text-xl mb-4">Delivery Address</h3>
-          <div className="grid grid-cols-2 gap-3.5">
-            <Input label="Full Name" error={errors.fullName?.message} {...register('fullName', { required: true })} />
-            <Input label="Phone" error={errors.phone?.message} {...register('phone', { required: true })} />
-          </div>
-          <Input label="Address Line" {...register('address', { required: true })} />
-          <div className="grid grid-cols-2 gap-3.5">
-            <Input label="City" {...register('city', { required: true })} />
-            <Input label="PIN Code" {...register('pin', { required: true })} />
-          </div>
+          <AddressBook selectedId={selectedAddressId} onSelect={setSelectedAddressId} />
         </div>
         <div className="bg-white border border-[#eee] p-6">
           <h3 className="font-display text-xl mb-4">Payment</h3>

@@ -1,3 +1,4 @@
+// PATH: server/app.js  (REPLACES existing file — mounts /api/users)
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -17,6 +18,7 @@ const reviewRoutes = require('./routes/reviewRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const uploadRoutes = require('./routes/uploadRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -42,6 +44,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/payments', paymentRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/users', userRoutes);
 
 app.use(notFound);
 app.use(errorHandler);
