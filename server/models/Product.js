@@ -1,3 +1,4 @@
+// PATH: server/models/Product.js  (REPLACES existing file)
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
@@ -9,13 +10,13 @@ const productSchema = new mongoose.Schema(
     },
 
     slug: {
-  type: String,
-  required: true,
-  unique: true,
-  sparse: true,
-  lowercase: true,
-  trim: true,
-},
+      type: String,
+      required: true,
+      unique: true,
+      sparse: true,
+      lowercase: true,
+      trim: true,
+    },
 
     category: {
       type: String,
@@ -100,13 +101,13 @@ const productSchema = new mongoose.Schema(
     },
 
     tags: {
-  type: [{
-    type: String,
-    lowercase: true,
-    trim: true,
-  }],
-  default: [],
-},
+      type: [{
+        type: String,
+        lowercase: true,
+        trim: true,
+      }],
+      default: [],
+    },
 
     isNewArrival: {
       type: Boolean,
@@ -119,17 +120,14 @@ const productSchema = new mongoose.Schema(
     },
 
     isActive: {
-  type: Boolean,
-  default: true,
+      type: Boolean,
+      default: true,
     },
 
-isDeleted: {
-  type: Boolean,
-  default: false,
-},
-
-
-
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
 
     weight: {
       type: Number,

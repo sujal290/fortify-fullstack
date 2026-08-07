@@ -1,3 +1,4 @@
+// PATH: client/src/components/ProductFormModal.jsx  (REPLACES existing file)
 'use client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -19,7 +20,20 @@ export default function ProductFormModal({ open, onClose, onSubmit, editing, sub
 
   useEffect(() => {
     if (open) {
-      reset(editing || { category: CATEGORIES[0].name, stock: 10 });
+      reset(
+        editing
+          ? { ...editing, tags: (editing.tags || []).join(', ') }
+          : {
+              category: CATEGORIES[0].name,
+              stock: 10,
+              isActive: true,
+              isFeatured: false,
+              isNewArrival: false,
+              isBestSeller: false,
+              weight: 0,
+              dimensions: { length: 0, width: 0, height: 0 },
+            }
+      );
       setImages(editing?.images || []);
     }
   }, [open, editing, reset]);
@@ -41,10 +55,26 @@ export default function ProductFormModal({ open, onClose, onSubmit, editing, sub
 
   const removeImage = (publicId) => setImages((prev) => prev.filter((img) => img.publicId !== publicId));
 
-  const submit = (data) => onSubmit({ ...data, images });
+  const submit = (data) => {
+    const tags = (data.tags || '')
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    onSubmit({
+      ...data,
+      images,
+      tags,
+      dimensions: {
+        length: Number(data.dimensions?.length) || 0,
+        width: Number(data.dimensions?.width) || 0,
+        height: Number(data.dimensions?.height) || 0,
+      },
+    });
+  };
 
   return (
-    <Modal open={open} onClose={onClose} title={editing ? 'Edit Product' : 'Add Product'}>
+    <Modal open={open} onClose={onClose} title={editing ? 'Edit Product' : 'Add Product'} maxWidth="max-w-2xl">
       <form onSubmit={handleSubmit(submit)}>
         <Input label="Product Name" error={errors.name?.message} {...register('name', { required: 'Required' })} />
         <div className="grid grid-cols-2 gap-3.5">
@@ -58,6 +88,33 @@ export default function ProductFormModal({ open, onClose, onSubmit, editing, sub
         <div className="mb-4">
           <label className="block text-[10.5px] tracking-[0.08em] uppercase text-navy font-semibold mb-1.5">Description</label>
           <textarea rows={3} className="w-full px-3.5 py-2.5 text-[13.5px] bg-[#fbfbfa] border border-[#ddd] outline-none focus:border-gold" {...register('description', { required: true })} />
+        </div>
+
+        {/* --- Catalog details --- */}
+        <div className="grid grid-cols-2 gap-3.5">
+          <Input label="SKU (optional)" placeholder="e.g. FRT-BP-001" {...register('sku')} />
+          <Input label="Tags (comma-separated)" placeholder="leather, weekend, travel" {...register('tags')} />
+        </div>
+        <div className="grid grid-cols-3 gap-3.5">
+          <Input label="Material" {...register('material')} />
+          <Input label="Color" {...register('color')} />
+          <Input label="Weight (kg)" type="number" min={0} step="0.01" {...register('weight', { valueAsNumber: true })} />
+        </div>
+        <div className="mb-1.5">
+          <label className="block text-[10.5px] tracking-[0.08em] uppercase text-navy font-semibold mb-1.5">Dimensions (cm)</label>
+          <div className="grid grid-cols-3 gap-3.5">
+            <Input placeholder="Length" type="number" min={0} {...register('dimensions.length', { valueAsNumber: true })} />
+            <Input placeholder="Width" type="number" min={0} {...register('dimensions.width', { valueAsNumber: true })} />
+            <Input placeholder="Height" type="number" min={0} {...register('dimensions.height', { valueAsNumber: true })} />
+          </div>
+        </div>
+
+        {/* --- Flags --- */}
+        <div className="flex flex-wrap gap-x-6 gap-y-2 mb-5 mt-3 p-3.5 bg-[#fbfbfa] border border-[#eee]">
+          <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isActive')} /> Active (visible on storefront)</label>
+          <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isFeatured')} /> Featured</label>
+          <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isNewArrival')} /> New Arrival</label>
+          <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isBestSeller')} /> Best Seller</label>
         </div>
 
         <div className="mb-5">
