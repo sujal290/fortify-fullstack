@@ -14,7 +14,7 @@ import { SkeletonProductCard } from '@/ui/Skeleton';
 import { CATEGORIES } from '@/constants/categories';
 import { usePagination } from '@/hooks/usePagination';
 import { useDebounce } from '@/hooks/useDebounce';
-import { fetchProducts } from '@/services/productService';
+import { fetchProducts, fetchProductTags } from '@/services/productService';
 
 const PRICE_RANGES = [
   { label: 'Any Price', min: undefined, max: undefined },
@@ -37,11 +37,14 @@ export default function ShopPage() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [sort, setSort] = useState('newest');
   const [priceRange, setPriceRange] = useState(0); // index into PRICE_RANGES
+  const [tag, setTag] = useState(null);
   const { page, setPage } = usePagination(0);
   const debouncedSearch = useDebounce(search, 400);
 
+  const { data: tags } = useQuery({ queryKey: ['products', 'tags'], queryFn: fetchProductTags });
+
   const { data, isLoading } = useQuery({
-    queryKey: ['products', category, debouncedSearch, sort, priceRange, page],
+    queryKey: ['products', category, debouncedSearch, sort, priceRange, tag, page],
     queryFn: () =>
       fetchProducts({
         category: category === 'All' ? undefined : category,
@@ -49,6 +52,7 @@ export default function ShopPage() {
         sort,
         minPrice: PRICE_RANGES[priceRange].min,
         maxPrice: PRICE_RANGES[priceRange].max,
+        tag: tag || undefined,
         page,
       }),
   });
@@ -88,11 +92,21 @@ export default function ShopPage() {
         </div>
 
         {/* Price range chips */}
-        <div className="flex flex-wrap gap-2.5 justify-center mb-10">
+        <div className="flex flex-wrap gap-2.5 justify-center mb-4">
           {PRICE_RANGES.map((r, i) => (
             <Chip key={r.label} active={priceRange === i} onClick={() => setPriceRange(i)}>{r.label}</Chip>
           ))}
         </div>
+
+        {/* Tag chips — only shows if any products actually have tags set */}
+        {tags?.length > 0 && (
+          <div className="flex flex-wrap gap-2 justify-center mb-10">
+            <Chip active={!tag} onClick={() => setTag(null)}>All Tags</Chip>
+            {tags.map((t) => (
+              <Chip key={t} active={tag === t} onClick={() => setTag(t)}>{t}</Chip>
+            ))}
+          </div>
+        )}
 
         {isLoading ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">

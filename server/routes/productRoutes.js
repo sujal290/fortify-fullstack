@@ -1,4 +1,3 @@
-// PATH: server/routes/productRoutes.js  (REPLACES existing file)
 const express = require('express');
 const {
   getProducts,
@@ -7,6 +6,7 @@ const {
   updateProduct,
   deleteProduct,
   restoreProduct,
+  getProductTags,
 } = require('../controllers/productController');
 const { protect } = require('../middleware/auth');
 const adminOnly = require('../middleware/adminOnly');
@@ -14,6 +14,7 @@ const adminOnly = require('../middleware/adminOnly');
 const router = express.Router();
 
 router.get('/', getProducts);
+router.get('/tags', getProductTags); // must come before '/:id' or Express treats "tags" as an id
 router.get('/:id', getProductById);
 router.post('/', protect, adminOnly, createProduct);
 router.put('/:id', protect, adminOnly, updateProduct);

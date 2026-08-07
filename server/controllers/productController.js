@@ -1,4 +1,3 @@
-// PATH: server/controllers/productController.js  (REPLACES existing file)
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 
@@ -31,6 +30,10 @@ const getProducts = asyncHandler(async (req, res) => {
     if (minPrice) filter.price.$gte = Number(minPrice);
     if (maxPrice) filter.price.$lte = Number(maxPrice);
   }
+  if (req.query.featured === 'true') filter.isFeatured = true;
+  if (req.query.newArrival === 'true') filter.isNewArrival = true;
+  if (req.query.bestSeller === 'true') filter.isBestSeller = true;
+  if (req.query.tag) filter.tags = req.query.tag.toLowerCase();
 
   const SORTS = {
     price_asc: 'price',
@@ -264,4 +267,11 @@ const restoreProduct = asyncHandler(async (req, res) => {
   res.json({ success: true, message: 'Product restored successfully', product });
 });
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, restoreProduct };
+// GET /api/products/tags   — distinct tags across active, non-deleted products
+// (used to populate the tag filter chips on the shop page)
+const getProductTags = asyncHandler(async (req, res) => {
+  const tags = await Product.distinct('tags', { isDeleted: false, isActive: true });
+  res.json(tags.filter(Boolean).sort());
+});
+
+module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct, restoreProduct, getProductTags };
