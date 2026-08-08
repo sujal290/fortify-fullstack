@@ -1,3 +1,4 @@
+// PATH: client/src/components/ProductCard.jsx  (REPLACES existing file)
 'use client';
 import Link from 'next/link';
 import { useState } from 'react';
@@ -13,8 +14,10 @@ const fmt = (n) => '₹' + n.toLocaleString('en-IN');
 export default function ProductCard({ product }) {
   const { addItem } = useCart();
   const [adding, setAdding] = useState(false);
-  const outOfStock = product.stock <= 0;
-  const lowStock = product.stock > 0 && product.stock <= 5;
+  const hasVariants = product.variants?.length > 0;
+  const totalStock = hasVariants ? product.variants.reduce((s, v) => s + v.stock, 0) : product.stock;
+  const outOfStock = totalStock <= 0;
+  const lowStock = totalStock > 0 && totalStock <= 5;
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -52,13 +55,22 @@ export default function ProductCard({ product }) {
               <span className="text-xs text-muted line-through ml-2 font-normal">{fmt(product.mrp)}</span>
             )}
           </div>
-          {lowStock && <div className="text-[11px] text-[#a5680c] mt-1">Only {product.stock} left</div>}
+          {hasVariants && <div className="text-[11px] text-muted mt-1">{product.variants.length} option{product.variants.length > 1 ? 's' : ''}</div>}
+          {!hasVariants && lowStock && <div className="text-[11px] text-[#a5680c] mt-1">Only {product.stock} left</div>}
         </div>
       </Link>
       <div className="px-4 pb-4">
-        <Button variant="dark" size="sm" fullWidth loading={adding} disabled={outOfStock} onClick={handleAdd}>
-          {outOfStock ? 'Out of Stock' : 'Add to Cart'}
-        </Button>
+        {hasVariants ? (
+          <Link href={`/product/${product._id}`}>
+            <Button variant="dark" size="sm" fullWidth disabled={outOfStock}>
+              {outOfStock ? 'Out of Stock' : 'Select Options'}
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="dark" size="sm" fullWidth loading={adding} disabled={outOfStock} onClick={handleAdd}>
+            {outOfStock ? 'Out of Stock' : 'Add to Cart'}
+          </Button>
+        )}
       </div>
     </Card>
   );

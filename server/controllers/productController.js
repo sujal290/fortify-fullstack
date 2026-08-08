@@ -1,3 +1,4 @@
+// PATH: server/controllers/productController.js  (REPLACES existing file — adds variants create/update)
 const asyncHandler = require('express-async-handler');
 const Product = require('../models/Product');
 
@@ -99,6 +100,7 @@ const createProduct = asyncHandler(async (req, res) => {
     isActive,
     weight,
     dimensions,
+    variants,
   } = req.body;
 
   if (price > mrp) {
@@ -120,6 +122,10 @@ const createProduct = asyncHandler(async (req, res) => {
   if (!description?.trim()) {
     res.status(400);
     throw new Error('Description is required');
+  }
+  if (Array.isArray(variants) && variants.some((v) => Number(v.stock) < 0)) {
+    res.status(400);
+    throw new Error('Variant stock cannot be negative');
   }
 
   let slug = slugify(name);
@@ -153,6 +159,11 @@ const createProduct = asyncHandler(async (req, res) => {
     isActive,
     weight,
     dimensions,
+    variants: Array.isArray(variants)
+      ? variants
+          .filter((v) => v.color || v.size)
+          .map((v) => ({ color: v.color || '', size: v.size || '', sku: v.sku || '', stock: Number(v.stock) || 0 }))
+      : [],
   });
 
   res.status(201).json({
@@ -196,6 +207,15 @@ const updateProduct = asyncHandler(async (req, res) => {
       width: Number(req.body.dimensions.width ?? product.dimensions.width),
       height: Number(req.body.dimensions.height ?? product.dimensions.height),
     };
+  }
+  if (Array.isArray(req.body.variants)) {
+    if (req.body.variants.some((v) => Number(v.stock) < 0)) {
+      res.status(400);
+      throw new Error('Variant stock cannot be negative');
+    }
+    product.variants = req.body.variants
+      .filter((v) => v.color || v.size)
+      .map((v) => ({ color: v.color || '', size: v.size || '', sku: v.sku || '', stock: Number(v.stock) || 0 }));
   }
 
   if (!product.name?.trim()) {

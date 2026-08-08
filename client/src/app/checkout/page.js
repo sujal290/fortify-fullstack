@@ -1,4 +1,4 @@
-// PATH: client/src/app/checkout/page.js  (REPLACES existing file)
+// PATH: client/src/app/checkout/page.js  (REPLACES existing file — same key-collision fix)
 'use client';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -104,8 +104,8 @@ function CheckoutForm() {
       <div className="bg-white border border-[#eee] p-6">
         <h3 className="font-display text-xl mb-4">Order Summary</h3>
         {items.map((i) => (
-          <div key={i.product._id} className="flex justify-between text-[13px] text-muted py-2">
-            <span>{i.product.name} × {i.qty}</span><span>{fmt(i.product.price * i.qty)}</span>
+          <div key={i.product._id + (i.variantId || '')} className="flex justify-between text-[13px] text-muted py-2">
+            <span>{i.product.name}{i.variantLabel ? ` (${i.variantLabel})` : ''} × {i.qty}</span><span>{fmt(i.product.price * i.qty)}</span>
           </div>
         ))}
         <div className="flex justify-between text-[13px] text-muted py-2"><span>Shipping</span><span>{shipping === 0 ? 'Free' : fmt(shipping)}</span></div>

@@ -1,4 +1,5 @@
 // PATH: server/controllers/orderController.js  (REPLACES existing file)
+// PATH: server/controllers/orderController.js  (REPLACES existing file)
 const asyncHandler = require('express-async-handler');
 const Order = require('../models/Order');
 const Cart = require('../models/Cart');
@@ -7,6 +8,14 @@ const User = require('../models/User');
 const Product = require('../models/Product');
 const sendEmail = require('../utils/sendEmail');
 const { orderPlacedEmail, orderStatusEmail } = require('../services/emailTemplates');
+
+// Helper: reads the correct stock number for a cart/order line — the
+// specific variant's stock if one was picked, otherwise the base product stock.
+const stockFor = (product, variantId) => {
+  if (!variantId) return product.stock;
+  const variant = product.variants?.id ? product.variants.id(variantId) : product.variants?.find((v) => v._id.toString() === variantId.toString());
+  return variant ? variant.stock : 0;
+};
 
 // POST /api/orders   { shippingAddress, paymentMethod, couponCode }
 const placeOrder = asyncHandler(async (req, res) => {
@@ -18,17 +27,22 @@ const placeOrder = asyncHandler(async (req, res) => {
 
   // Re-check stock against the live product record right before committing the
   // order — the cart may have been sitting open for a while, and someone else
-  // could have bought the last units in the meantime.
+  // could have bought the last units in the meantime. Checks the specific
+  // variant's stock when one was picked, not the (irrelevant) base stock.
   for (const i of cart.items) {
-    if (!i.product || i.product.stock < i.qty) {
+    const available = i.product ? stockFor(i.product, i.variantId) : 0;
+    if (!i.product || available < i.qty) {
+      const label = i.variantLabel ? ` (${i.variantLabel})` : '';
       res.status(400);
-      throw new Error(`Sorry, "${i.product?.name || 'an item'}" no longer has enough stock (only ${i.product?.stock ?? 0} left). Please update your cart.`);
+      throw new Error(`Sorry, "${i.product?.name || 'an item'}${label}" no longer has enough stock (only ${available} left). Please update your cart.`);
     }
   }
 
   const items = cart.items.map((i) => ({
     product: i.product._id,
-    name: i.product.name,
+    variantId: i.variantId || null,
+    variantLabel: i.variantLabel || '',
+    name: i.variantLabel ? `${i.product.name} (${i.variantLabel})` : i.product.name,
     price: i.product.price,
     qty: i.qty,
   }));
@@ -64,9 +78,17 @@ const placeOrder = asyncHandler(async (req, res) => {
     trackingHistory: [{ status: 'Pending', at: new Date() }],
   });
 
-  // Decrement stock now that the order is confirmed to exist.
+  // Decrement stock now that the order is confirmed to exist — targets the
+  // specific variant's stock counter when one was picked, base stock otherwise.
   for (const i of cart.items) {
-    await Product.findByIdAndUpdate(i.product._id, { $inc: { stock: -i.qty } });
+    if (i.variantId) {
+      await Product.updateOne(
+        { _id: i.product._id, 'variants._id': i.variantId },
+        { $inc: { 'variants.$.stock': -i.qty } }
+      );
+    } else {
+      await Product.findByIdAndUpdate(i.product._id, { $inc: { stock: -i.qty } });
+    }
   }
 
   cart.items = [];
@@ -118,10 +140,18 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   order.trackingHistory.push({ status: req.body.status, at: new Date() });
   await order.save();
 
-  // Cancelling an order releases the stock it was holding back to inventory.
+  // Cancelling an order releases the stock it was holding back to inventory —
+  // targets the specific variant's counter when the item had one.
   if (req.body.status === 'Cancelled' && !wasAlreadyCancelled) {
     for (const i of order.items) {
-      await Product.findByIdAndUpdate(i.product, { $inc: { stock: i.qty } });
+      if (i.variantId) {
+        await Product.updateOne(
+          { _id: i.product, 'variants._id': i.variantId },
+          { $inc: { 'variants.$.stock': i.qty } }
+        );
+      } else {
+        await Product.findByIdAndUpdate(i.product, { $inc: { stock: i.qty } });
+      }
     }
   }
 

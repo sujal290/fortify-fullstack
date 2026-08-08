@@ -1,7 +1,7 @@
-// PATH: client/src/components/ProductFormModal.jsx  (REPLACES existing file)
+// PATH: client/src/components/ProductFormModal.jsx  (REPLACES existing file — adds variants editor)
 'use client';
 import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import Modal from '@/ui/Modal';
 import Input from '@/ui/Input';
 import Select from '@/ui/Select';
@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/useToast';
 
 // Shared Add/Edit form for the admin product CRUD screen.
 export default function ProductFormModal({ open, onClose, onSubmit, editing, submitting }) {
-  const { register, handleSubmit, reset, formState: { errors } } = useForm();
+  const { register, handleSubmit, reset, control, formState: { errors } } = useForm();
+  const { fields: variantFields, append: appendVariant, remove: removeVariant } = useFieldArray({ control, name: 'variants' });
   const { showToast } = useToast();
   const [images, setImages] = useState([]); // [{ url, publicId }]
   const [uploading, setUploading] = useState(false);
@@ -70,6 +71,9 @@ export default function ProductFormModal({ open, onClose, onSubmit, editing, sub
         width: Number(data.dimensions?.width) || 0,
         height: Number(data.dimensions?.height) || 0,
       },
+      variants: (data.variants || [])
+        .filter((v) => v.color || v.size)
+        .map((v) => ({ color: v.color || '', size: v.size || '', sku: v.sku || '', stock: Number(v.stock) || 0 })),
     });
   };
 
@@ -115,6 +119,38 @@ export default function ProductFormModal({ open, onClose, onSubmit, editing, sub
           <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isFeatured')} /> Featured</label>
           <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isNewArrival')} /> New Arrival</label>
           <label className="flex items-center gap-2 text-[12.5px]"><input type="checkbox" {...register('isBestSeller')} /> Best Seller</label>
+        </div>
+
+        {/* --- Variants (optional) --- */}
+        <div className="mb-5">
+          <label className="block text-[10.5px] tracking-[0.08em] uppercase text-navy font-semibold mb-1.5">
+            Variants (optional — color/size options, each with its own stock)
+          </label>
+          {variantFields.length > 0 && (
+            <div className="space-y-2 mb-2.5">
+              {variantFields.map((field, i) => (
+                <div key={field.id} className="grid grid-cols-[1fr_1fr_1fr_90px_28px] gap-2 items-start">
+                  <Input placeholder="Color" className="mb-0" {...register(`variants.${i}.color`)} />
+                  <Input placeholder="Size" className="mb-0" {...register(`variants.${i}.size`)} />
+                  <Input placeholder="SKU (optional)" className="mb-0" {...register(`variants.${i}.sku`)} />
+                  <Input placeholder="Stock" type="number" min={0} className="mb-0" {...register(`variants.${i}.stock`, { valueAsNumber: true })} />
+                  <button type="button" onClick={() => removeVariant(i)} className="h-[42px] text-red-700 hover:text-red-900 text-sm">✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => appendVariant({ color: '', size: '', sku: '', stock: 0 })}
+            className="text-[11px] uppercase tracking-[0.05em] text-navy border border-[#ddd] px-3 py-2 hover:border-gold"
+          >
+            + Add Variant
+          </button>
+          {variantFields.length > 0 && (
+            <p className="text-[11px] text-muted mt-1.5">
+              Once any variant exists, the base Stock field above is ignored — customers must pick a variant, and its own stock is what's tracked.
+            </p>
+          )}
         </div>
 
         <div className="mb-5">

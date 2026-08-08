@@ -1,3 +1,4 @@
+// PATH: client/src/app/cart/page.js  (REPLACES existing file — fixes a key-collision bug for multi-variant carts)
 'use client';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -52,15 +53,17 @@ export default function CartPage() {
       <div className="max-w-6xl mx-auto px-7 py-11 grid md:grid-cols-[1.7fr_1fr] gap-9 items-start">
         <div>
           {items.map((i) => (
-            <div key={i.product._id} className="grid grid-cols-[64px_1fr_auto_auto_auto] gap-4 items-center py-4.5 py-[18px] border-b border-[#eee]">
-              <div className="w-16 h-16 bg-cream border border-[#eee] flex items-center justify-center text-2xl">👜</div>
+            <div key={i.product._id + (i.variantId || '')} className="grid grid-cols-[64px_1fr_auto_auto_auto] gap-4 items-center py-4.5 py-[18px] border-b border-[#eee]">
+              <div className="w-16 h-16 bg-cream border border-[#eee] flex items-center justify-center text-2xl overflow-hidden">
+                {i.product.images?.[0]?.url ? <img src={i.product.images[0].url} alt="" className="w-full h-full object-cover" /> : '👜'}
+              </div>
               <div>
                 <div className="font-semibold text-sm">{i.product.name}</div>
-                <div className="text-xs text-muted">{i.product.category}</div>
+                <div className="text-xs text-muted">{i.variantLabel ? i.variantLabel : i.product.category}</div>
               </div>
-              <QuantityStepper qty={i.qty} onChange={(q) => updateItem(i.product._id, q)} />
+              <QuantityStepper qty={i.qty} onChange={(q) => updateItem(i.product._id, q, i.variantId)} />
               <div className="font-semibold">{fmt(i.product.price * i.qty)}</div>
-              <button onClick={() => removeItem(i.product._id)} className="text-red-700 text-[11px] uppercase tracking-[0.05em]">Remove</button>
+              <button onClick={() => removeItem(i.product._id, i.variantId)} className="text-red-700 text-[11px] uppercase tracking-[0.05em]">Remove</button>
             </div>
           ))}
         </div>

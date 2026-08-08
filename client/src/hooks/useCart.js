@@ -1,3 +1,4 @@
+// PATH: client/src/hooks/useCart.js  (REPLACES existing file)
 'use client';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCart } from '@/redux/slices/cartSlice';
@@ -12,19 +13,19 @@ export function useCart() {
   const count = items.reduce((sum, i) => sum + i.qty, 0);
   const total = items.reduce((sum, i) => sum + (i.product?.price || 0) * i.qty, 0);
 
-  const addItem = async (productId, qty = 1) => {
-    const cart = await cartService.addToCart(productId, qty);
+  const addItem = async (productId, qty = 1, variantId = null) => {
+    const cart = await cartService.addToCart(productId, variantId, qty);
     dispatch(setCart(cart.items));
     showToast('Added to cart');
   };
 
-  const updateItem = async (productId, qty) => {
-    const cart = await cartService.updateCartItem(productId, qty);
+  const updateItem = async (productId, qty, variantId = null) => {
+    const cart = await cartService.updateCartItem(productId, qty, variantId);
     dispatch(setCart(cart.items));
   };
 
-  const removeItem = async (productId) => {
-    const cart = await cartService.removeCartItem(productId);
+  const removeItem = async (productId, variantId = null) => {
+    const cart = await cartService.removeCartItem(productId, variantId);
     dispatch(setCart(cart.items));
   };
 

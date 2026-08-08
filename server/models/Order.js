@@ -1,9 +1,12 @@
+// PATH: server/models/Order.js  (REPLACES existing file — adds variantId/variantLabel to order items)
 // PATH: server/models/Order.js  (REPLACES existing file)
 const mongoose = require('mongoose');
 
 const orderItemSchema = new mongoose.Schema(
   {
     product: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
+    variantId: { type: mongoose.Schema.Types.ObjectId, default: null },
+    variantLabel: { type: String, default: '' },
     name: String,
     price: Number,
     qty: { type: Number, required: true },

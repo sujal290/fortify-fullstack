@@ -1,4 +1,4 @@
-// PATH: server/models/Product.js  (REPLACES existing file)
+// PATH: server/models/Product.js  (REPLACES existing file — adds optional variants array)
 const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema(
@@ -149,6 +149,19 @@ const productSchema = new mongoose.Schema(
         default: 0,
       },
     },
+
+    // Optional — a product with an empty/missing variants array is a single
+    // SKU and behaves exactly as before (base price/stock fields are used
+    // directly). Once variants exist, THEY become the source of truth for
+    // stock and the customer must pick one before adding to cart.
+    variants: [
+      {
+        color: { type: String, trim: true, default: '' },
+        size: { type: String, trim: true, default: '' },
+        sku: { type: String, trim: true, default: '' },
+        stock: { type: Number, default: 0, min: 0 },
+      },
+    ],
   },
   {
     timestamps: true,

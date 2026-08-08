@@ -1,4 +1,5 @@
 // PATH: client/src/app/product/[id]/page.js  (REPLACES existing file)
+// PATH: client/src/app/product/[id]/page.js  (REPLACES existing file)
 'use client';
 import { useState } from 'react';
 import { useParams } from 'next/navigation';
@@ -8,10 +9,12 @@ import Breadcrumb from '@/components/Breadcrumb';
 import WishlistButton from '@/components/WishlistButton';
 import ReviewSection from '@/components/ReviewSection';
 import ProductGallery from '@/components/ProductGallery';
+import VariantSelector from '@/components/VariantSelector';
 import Button from '@/ui/Button';
 import { CATEGORIES } from '@/constants/categories';
 import { fetchProductById } from '@/services/productService';
 import { useCart } from '@/hooks/useCart';
+import { useToast } from '@/hooks/useToast';
 import { useRouter } from 'next/navigation';
 
 const iconFor = (category) => CATEGORIES.find((c) => c.name === category)?.icon || '👜';
@@ -21,7 +24,9 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const router = useRouter();
   const { addItem } = useCart();
+  const { showToast } = useToast();
   const [adding, setAdding] = useState(false);
+  const [selectedVariant, setSelectedVariant] = useState(null);
 
   const { data: product, isLoading } = useQuery({
     queryKey: ['product', id],
@@ -32,13 +37,23 @@ export default function ProductDetailPage() {
     return <MainLayout><div className="py-24 text-center text-muted">Loading…</div></MainLayout>;
   }
 
-  const outOfStock = product.stock <= 0;
-  const lowStock = product.stock > 0 && product.stock <= 5;
+  const hasVariants = product.variants?.length > 0;
+  const stock = hasVariants ? (selectedVariant?.stock ?? 0) : product.stock;
+  const outOfStock = hasVariants ? (!selectedVariant || stock <= 0) : stock <= 0;
+  const lowStock = stock > 0 && stock <= 5;
 
   const handleAdd = async () => {
+    if (hasVariants && !selectedVariant) {
+      showToast('Please select a color/size first', 'error');
+      return;
+    }
     if (outOfStock) return;
     setAdding(true);
-    try { await addItem(product._id); } finally { setAdding(false); }
+    try {
+      await addItem(product._id, 1, selectedVariant?._id || null);
+    } finally {
+      setAdding(false);
+    }
   };
 
   return (
@@ -58,16 +73,31 @@ export default function ProductDetailPage() {
             {product.mrp > product.price && <span className="text-base text-muted line-through ml-2.5 font-normal">{fmt(product.mrp)}</span>}
           </div>
           <p className="text-muted text-sm leading-relaxed mb-6">{product.description}</p>
+
+          {hasVariants && (
+            <VariantSelector variants={product.variants} selected={selectedVariant} onSelect={setSelectedVariant} />
+          )}
+
           <div className="flex gap-6 py-5 border-y border-[#eee] mb-6">
             <div className="text-[11.5px] text-muted">
               <b className="block text-ink text-[12.5px] mb-0.5">Availability</b>
-              {outOfStock ? <span className="text-red-700 font-semibold">Out of stock</span> : lowStock ? <span className="text-[#a5680c] font-semibold">Only {product.stock} left</span> : `${product.stock} in stock`}
+              {hasVariants && !selectedVariant ? (
+                'Select an option'
+              ) : outOfStock ? (
+                <span className="text-red-700 font-semibold">Out of stock</span>
+              ) : lowStock ? (
+                <span className="text-[#a5680c] font-semibold">Only {stock} left</span>
+              ) : (
+                `${stock} in stock`
+              )}
             </div>
             <div className="text-[11.5px] text-muted"><b className="block text-ink text-[12.5px] mb-0.5">Delivery</b>3–5 business days</div>
             <div className="text-[11.5px] text-muted"><b className="block text-ink text-[12.5px] mb-0.5">Warranty</b>Lifetime hardware</div>
           </div>
           <div className="flex gap-3.5">
-            <Button variant="dark" loading={adding} disabled={outOfStock} onClick={handleAdd}>{outOfStock ? 'Out of Stock' : 'Add to Cart'}</Button>
+            <Button variant="dark" loading={adding} disabled={outOfStock} onClick={handleAdd}>
+              {hasVariants && !selectedVariant ? 'Select Options' : outOfStock ? 'Out of Stock' : 'Add to Cart'}
+            </Button>
             <Button variant="primary" disabled={outOfStock} onClick={async () => { await handleAdd(); router.push('/cart'); }}>Buy Now</Button>
             <WishlistButton productId={product._id} className="!w-11 !h-11" />
           </div>
